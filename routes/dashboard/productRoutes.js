@@ -8,6 +8,11 @@ router.post(
   authMiddleware,
   productController.update_product
 );
+router.post(
+  "/product-image-update",
+  authMiddleware,
+  productController.product_image_update
+);
 router.get("/products-get", authMiddleware, productController.products_get);
 router.get(
   "/product-get/:productId",
