@@ -18,7 +18,7 @@ class productController {
         brand,
       } = field;
       const { images } = files;
-      console.log("name: ", name);
+      console.log("images: ", images);
 
       name = name.trim();
       const slug = name.split(" ").join("-");
@@ -32,11 +32,21 @@ class productController {
 
       try {
         let allImageUrl = [];
-        for (let i = 0; i < images.length; i++) {
-          const result = await cloudinary.uploader.upload(images[i].filepath, {
+        if (!images.length) {
+          const result = await cloudinary.uploader.upload(images.filepath, {
             folder: "products",
           });
           allImageUrl = [...allImageUrl, result.url];
+        } else {
+          for (let i = 0; i < images.length; i++) {
+            const result = await cloudinary.uploader.upload(
+              images[i].filepath,
+              {
+                folder: "products",
+              }
+            );
+            allImageUrl = [...allImageUrl, result.url];
+          }
         }
         const product = await productModel.create({
           sellerId: id,
@@ -65,7 +75,7 @@ class productController {
       if (searchValue) {
         const products = await productModel
           .find({
-            $text: { $search: searchValue },
+            name: new RegExp(searchValue, "i"),
             sellerId: id,
           })
           .skip(skipPage)
@@ -75,7 +85,7 @@ class productController {
           });
         const totalProduct = await productModel
           .find({
-            $text: { $search: searchValue },
+            name: new RegExp(searchValue, "i"),
             sellerId: id,
           })
           .countDocuments();
@@ -108,12 +118,11 @@ class productController {
     }
   };
   update_product = async (req, res) => {
-    let { name, description, discount, brand, stock, price, productId } =
-      req.body;
-    name = name.trim();
-    const slug = name.split(" ").join("-");
-    try {
-      await productModel.findByIdAndUpdate(productId, {
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, field, files) => {
+      console.log("files: ", files);
+      console.log("field: ", field);
+      let {
         name,
         description,
         discount,
@@ -121,18 +130,71 @@ class productController {
         stock,
         price,
         productId,
-        slug,
+        images,
+      } = field;
+      const { newImg } = files;
+      name = name?.trim();
+      const slug = name?.split(" ").join("-");
+      cloudinary.config({
+        cloud_name: process.env.CLOUND_NAME,
+        api_key: process.env.API_KEY,
+        api_secret: process.env.API_SECRET,
+        secure: true,
       });
-      const product = await productModel.findById(productId);
-      responseReturn(res, 200, { product, message: "product update success" });
-    } catch (error) {
-      responseReturn(res, 500, { error: error.message });
-    }
+      try {
+        let allImageUrl = [...images];
+
+        if (newImg?.length > 0) {
+          for (let i = 0; i < newImg?.length; i++) {
+            const result = await cloudinary.uploader.upload(
+              newImg[i].filepath,
+              {
+                folder: "products",
+              }
+            );
+            allImageUrl.push(result.url);
+          }
+        }
+        // } else {
+        //   for (let i = 0; i < images.length; i++) {
+        //     const result = await cloudinary.uploader.upload(
+        //       newImg[i].filepath,
+        //       {
+        //         folder: "products",
+        //       }
+        //     );
+        //     allImageUrl.push(result.url);
+        //   }
+        // }
+
+        await productModel.findByIdAndUpdate(productId, {
+          name,
+          description,
+          discount,
+          brand,
+          stock,
+          price,
+          productId,
+          slug,
+          images: allImageUrl,
+        });
+        const product = await productModel.findById(productId);
+        responseReturn(res, 200, {
+          product,
+          message: "product update success",
+        });
+      } catch (error) {
+        console.log("error: ", error);
+        responseReturn(res, 500, { error: error.message });
+      }
+    });
   };
   product_image_update = async (req, res) => {
     const form = formidable({ multiples: true });
 
     form.parse(req, async (err, field, files) => {
+      console.log("files: ", files);
+      console.log("field: ", field);
       const { productId, oldImage } = field;
       const { newImage } = files;
 
