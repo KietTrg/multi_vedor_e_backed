@@ -133,6 +133,7 @@ class productController {
         images,
       } = field;
       const { newImg } = files;
+
       name = name?.trim();
       const slug = name?.split(" ").join("-");
       cloudinary.config({
@@ -142,30 +143,29 @@ class productController {
         secure: true,
       });
       try {
-        let allImageUrl = [...images];
+        let allImageUrl = [];
+        if (images) {
+          allImageUrl.push(images);
+        }
 
-        if (newImg?.length > 0) {
-          for (let i = 0; i < newImg?.length; i++) {
-            const result = await cloudinary.uploader.upload(
-              newImg[i].filepath,
-              {
-                folder: "products",
-              }
-            );
+        if (newImg) {
+          if (newImg?.length > 0) {
+            for (let i = 0; i < newImg?.length; i++) {
+              const result = await cloudinary.uploader.upload(
+                newImg[i].filepath,
+                {
+                  folder: "products",
+                }
+              );
+              allImageUrl.push(result.url);
+            }
+          } else {
+            const result = await cloudinary.uploader.upload(newImg?.filepath, {
+              folder: "products",
+            });
             allImageUrl.push(result.url);
           }
         }
-        // } else {
-        //   for (let i = 0; i < images.length; i++) {
-        //     const result = await cloudinary.uploader.upload(
-        //       newImg[i].filepath,
-        //       {
-        //         folder: "products",
-        //       }
-        //     );
-        //     allImageUrl.push(result.url);
-        //   }
-        // }
 
         await productModel.findByIdAndUpdate(productId, {
           name,
