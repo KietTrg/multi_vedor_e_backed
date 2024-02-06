@@ -45,7 +45,7 @@ class categoryController {
       }
     });
   };
-  get_category = async (req, res) => {
+  get_categorys = async (req, res) => {
     const { page, searchValue, parPage } = req.query;
     // const skipPage = parseInt(parPage) * (parseInt(page) - 1);
 
@@ -89,6 +89,24 @@ class categoryController {
       }
     } catch (error) {
       console.log("error: ", error.message);
+    }
+  };
+  get_category = async (req, res) => {
+    const { categoryId } = req.params;
+    try {
+      const category = await categoryModel.findById(categoryId);
+      responseReturn(res, 200, { category });
+    } catch (error) {
+      responseReturn(res, 500, { error: error.message });
+    }
+  };
+  delete_category = async (req, res) => {
+    const { categoryId } = req.body;
+    try {
+      await categoryModel.findByIdAndDelete(categoryId);
+      responseReturn(res, 200, { message: "category delete success" });
+    } catch (error) {
+      responseReturn(res, 500, { error: error.message });
     }
   };
 }

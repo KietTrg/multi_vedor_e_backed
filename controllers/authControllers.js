@@ -2,6 +2,8 @@ const adminModel = require("../models/adminModel");
 const sellerModel = require("../models/sellerModel");
 const sellerCustomerModel = require("../models/chat/sellerCustomerModel");
 const bcrpty = require("bcrypt");
+const formidable = require("formidable");
+const cloudinary = require("cloudinary").v2;
 const jwt = require("jsonwebtoken");
 const { responseReturn } = require("../utiles/response");
 const { createToken } = require("../utiles/tokenCreate");
@@ -42,7 +44,7 @@ class authController {
           name,
           email,
           password: await bcrpty.hash(password, 10),
-          method: "menualy",
+          method: "menually",
           shopInfo: {},
         });
         await sellerCustomerModel.create({
@@ -96,6 +98,64 @@ class authController {
     } catch (error) {
       responseReturn(res, 500, { error: "Internal server error" });
     }
+  };
+  profile_image_upload = async (req, res) => {
+    const { id } = req;
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, _, files) => {
+      let { image } = files;
+      cloudinary.config({
+        cloud_name: process.env.CLOUND_NAME,
+        api_key: process.env.API_KEY,
+        api_secret: process.env.API_SECRET,
+        secure: true,
+      });
+      try {
+        const result = await cloudinary.uploader.upload(image.filepath, {
+          folder: "profile",
+        });
+        if (result) {
+          await sellerModel.findByIdAndUpdate(id, {
+            image: result.url,
+          });
+          const userInfo = await sellerModel.findById(id);
+          responseReturn(res, 201, {
+            message: "image upload success",
+            userInfo,
+          });
+        } else {
+          responseReturn(res, 404, { error: "image upload failed" });
+        }
+      } catch (error) {
+        responseReturn(res, 500, { error: error.message });
+      }
+    });
+  };
+
+  profile_info_add = async (req, res) => {
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, field, _) => {
+      console.log("field: ", field);
+      const { id } = req;
+      let { shopName, District, Division, subDistrict } = field;
+      try {
+        await sellerModel.findByIdAndUpdate(id, {
+          shopInfo: {
+            shopName,
+            Division,
+            District,
+            subDistrict,
+          },
+        });
+        const userInfo = await sellerModel.findById(id);
+        responseReturn(res, 201, {
+          message: "Profile info update success",
+          userInfo,
+        });
+      } catch (error) {
+        responseReturn(res, 500, { error: error.message });
+      }
+    });
   };
 }
 module.exports = new authController();

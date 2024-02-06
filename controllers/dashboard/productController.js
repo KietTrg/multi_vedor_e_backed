@@ -67,6 +67,18 @@ class productController {
       }
     });
   };
+  delete_product = async (req, res) => {
+    const { productId } = req.body;
+    try {
+      await productModel.findByIdAndDelete(productId);
+
+      responseReturn(res, 200, {
+        message: "product delete success",
+      });
+    } catch (error) {
+      responseReturn(res, 500, { error: error.message });
+    }
+  };
   products_get = async (req, res) => {
     const { page, searchValue, parPage } = req.query;
     const { id } = req;
@@ -145,7 +157,11 @@ class productController {
       try {
         let allImageUrl = [];
         if (images) {
-          allImageUrl.push(images);
+          if (typeof images === "string") {
+            allImageUrl.push(images);
+          } else {
+            allImageUrl = [...images];
+          }
         }
 
         if (newImg) {

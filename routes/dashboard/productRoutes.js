@@ -9,6 +9,11 @@ router.post(
   productController.update_product
 );
 router.post(
+  "/product-delete",
+  authMiddleware,
+  productController.delete_product
+);
+router.post(
   "/product-image-update",
   authMiddleware,
   productController.product_image_update

@@ -1,0 +1,10 @@
+const router = require("express").Router();
+const homeControllers = require("../../controllers/home/homeControllers");
+router.get("/get-categorys", homeControllers.get_categorys);
+router.get("/get-products", homeControllers.get_products);
+router.get("/get-product/:pid", homeControllers.get_product);
+router.get("/price-range-latest-product", homeControllers.price_range_product);
+router.get("/query-products", homeControllers.query_products);
+router.post("/customer/submit-review", homeControllers.customer_review);
+router.get("/customer/get-review/:productId", homeControllers.get_review);
+module.exports = router;
