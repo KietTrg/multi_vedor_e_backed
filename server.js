@@ -25,6 +25,7 @@ const io = socket(server, {
 });
 
 var allCustomer = [];
+var allSeller = [];
 
 const addUser = (customerId, socketId, userInfo) => {
   const checkUser = allCustomer.some((e) => e.customerId === customerId);
@@ -36,13 +37,69 @@ const addUser = (customerId, socketId, userInfo) => {
     });
   }
 };
+const addSeller = (sellerId, socketId, userInfo) => {
+  const checkSeller = allSeller.some((e) => e.sellerId === sellerId);
+  if (!checkSeller) {
+    allSeller.push({
+      sellerId,
+      socketId,
+      userInfo,
+    });
+  }
+};
+
+const findCustomer = (customerId) => {
+  return allCustomer.find((e) => e.customerId === customerId);
+};
+const findSeller = (sellerId) => {
+  return allSeller.find((e) => e.sellerId === sellerId);
+};
+const remove = (socketId) => {
+  allCustomer = allCustomer.filter((e) => e.socketId !== socketId);
+  allSeller = allSeller.filter((e) => e.socketId !== socketId);
+};
+
+let admin = {};
 
 io.on("connection", (s) => {
   console.log("socket server is connected...");
 
   s.on("add_user", (customerId, userInfo) => {
+    // console.log("userInfo: ", userInfo);
     addUser(customerId, s.id, userInfo);
+    io.emit("activeCustomer", allCustomer);
+
     // console.log("allCustomer: ", allCustomer);
+  });
+  s.on("add_seller", (sellerId, userInfo) => {
+    addSeller(sellerId, s.id, userInfo);
+    io.emit("activeSeller", allSeller);
+  });
+  s.on("add_admin", (adminInfo) => {
+    delete adminInfo.email;
+    admin = adminInfo;
+    admin.socketId = s.id;
+    io.emit("activeSeller", allSeller);
+  });
+  s.on("send_seller_message", (message) => {
+    // console.log("message: ", message);
+    const customer = findCustomer(message.receverId);
+    console.log("customer: ", customer);
+    if (customer !== undefined) {
+      s.to(customer.socketId).emit("seller_message", message);
+    }
+  });
+  s.on("send_customer_message", (message) => {
+    // console.log("message: ", message);
+    const seller = findSeller(message.receverId);
+    console.log("seller: ", seller);
+    if (seller !== undefined) {
+      s.to(seller.socketId).emit("customer_message", message);
+    }
+  });
+  s.on("disconnect", () => {
+    console.log("user disconnect");
+    remove(s.id);
   });
 });
 
