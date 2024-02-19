@@ -15,4 +15,5 @@ router.post(
   authMiddleware,
   authController.profile_info_add
 );
+router.get("/seller-logout", authMiddleware, authController.seller_logout);
 module.exports = router;

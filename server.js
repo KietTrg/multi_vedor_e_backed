@@ -60,6 +60,11 @@ const remove = (socketId) => {
 };
 
 let admin = {};
+const removeAdmin = (socketId) => {
+  if (admin.socketId === socketId) {
+    admin = {};
+  }
+};
 
 io.on("connection", (s) => {
   console.log("socket server is connected...");
@@ -68,18 +73,22 @@ io.on("connection", (s) => {
     // console.log("userInfo: ", userInfo);
     addUser(customerId, s.id, userInfo);
     io.emit("activeCustomer", allCustomer);
+    io.emit("activeSeller", allSeller);
 
     // console.log("allCustomer: ", allCustomer);
   });
   s.on("add_seller", (sellerId, userInfo) => {
     addSeller(sellerId, s.id, userInfo);
     io.emit("activeSeller", allSeller);
+    io.emit("activeCustomer", allCustomer);
+    io.emit("activeAdmin", { status: true });
   });
   s.on("add_admin", (adminInfo) => {
     delete adminInfo.email;
     admin = adminInfo;
     admin.socketId = s.id;
     io.emit("activeSeller", allSeller);
+    io.emit("activeAdmin", { status: true });
   });
   s.on("send_seller_message", (message) => {
     // console.log("message: ", message);
@@ -92,14 +101,30 @@ io.on("connection", (s) => {
   s.on("send_customer_message", (message) => {
     // console.log("message: ", message);
     const seller = findSeller(message.receverId);
-    console.log("seller: ", seller);
+    // console.log("seller: ", seller);
     if (seller !== undefined) {
       s.to(seller.socketId).emit("customer_message", message);
+    }
+  });
+  s.on("send_message_admin_to_seller", (message) => {
+    const seller = findSeller(message.receverId);
+    console.log("seller: ", seller);
+    if (seller !== undefined) {
+      s.to(seller.socketId).emit("receved_admin_message", message);
+    }
+  });
+  s.on("send_message_seller_to_admin", (message) => {
+    if (admin.socketId) {
+      s.to(admin.socketId).emit("receved_seller_message", message);
     }
   });
   s.on("disconnect", () => {
     console.log("user disconnect");
     remove(s.id);
+    removeAdmin(s.id);
+    io.emit("activeAdmin", { status: false });
+    io.emit("activeSeller", allSeller);
+    io.emit("activeCustomer", allCustomer);
   });
 });
 
@@ -108,7 +133,7 @@ app.use(cookieParser());
 app.use("/api", require("./routes/chatRoutes"));
 
 app.use("/api/home", require("./routes/home/homeRoutes"));
-app.use("/api/home", require("./routes/order/orderRoutes"));
+app.use("/api", require("./routes/order/orderRoutes"));
 app.use("/api", require("./routes/home/cardRoutes"));
 app.use("/api", require("./routes/authRoutes"));
 app.use("/api", require("./routes/home/customerAuthRoutes"));

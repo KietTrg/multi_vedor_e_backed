@@ -43,6 +43,7 @@ const place_order = async (req, res) => {
     // console.log("pro: ", pro);
     for (let j = 0; j < pro.length; j++) {
       let tempCusPro = pro[j].productInfo;
+      tempCusPro.quantity = pro[j].quantity;
       // console.log("tempCusPro: ", tempCusPro);
       customerOrderProduct.push(tempCusPro);
       if (pro[j]._id) {
@@ -167,10 +168,144 @@ const get_order = async (req, res) => {
     console.log("error: ", error.message);
   }
 };
+const get_admin_orders = async (req, res) => {
+  let { page, parPage, searchValue } = req.query;
+
+  page = parseInt(page);
+  console.log("page: ", page);
+  parPage = parseInt(parPage);
+  console.log("parPage: ", parPage);
+  const skipPage = parPage * (page - 1);
+  console.log("skipPage: ", skipPage);
+  try {
+    if (searchValue) {
+    } else {
+      const orders = await customerOrderModel
+        .aggregate([
+          {
+            $lookup: {
+              from: "authororders",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "subOrder",
+            },
+          },
+        ])
+        .skip(skipPage)
+        .limit(parPage)
+        .sort({ createAt: -1 });
+      const totalOrders = await customerOrderModel.aggregate([
+        {
+          $lookup: {
+            from: "authororders",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "subOrder",
+          },
+        },
+      ]);
+
+      console.log("totalOrders: ", totalOrders.length);
+
+      responseReturn(res, 200, { orders, totalOrders: totalOrders.length });
+    }
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
+const get_admin_order = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await customerOrderModel.aggregate([
+      {
+        $match: {
+          _id: new ObjectId(orderId),
+        },
+      },
+      {
+        $lookup: {
+          from: "authororders",
+          localField: "_id",
+          foreignField: "orderId",
+          as: "subOrder",
+        },
+      },
+    ]);
+    responseReturn(res, 200, { order: order[0] });
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
+const admin_order_update_status = async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  try {
+    await customerOrderModel.findByIdAndUpdate(orderId, {
+      deliveryStatus: status,
+    });
+    responseReturn(res, 200, { message: "update status success" });
+  } catch (error) {
+    console.log("error: ", error.message);
+    responseReturn(res, 500, { message: "interval server error" });
+  }
+};
+
+const get_seller_orders = async (req, res) => {
+  let { page, parPage, searchValue } = req.query;
+  let { sellerId } = req.params;
+  // console.log("sellerId: ", sellerId);
+
+  page = parseInt(page);
+  // console.log("page: ", page);
+  parPage = parseInt(parPage);
+  // searchValue = parseInt(searchValue);
+  console.log("searchValue: ", searchValue);
+
+  // console.log("parPage: ", parPage);
+  const skipPage = parPage * (page - 1);
+  // console.log("skipPage: ", skipPage);
+  try {
+    if (searchValue) {
+      const orders = await authOrderModel
+        .find({
+          price: searchValue,
+          sellerId,
+        })
+        .skip(skipPage)
+        .limit(parPage)
+        .sort({ createdAt: -1 });
+      // console.log("orders: ", orders);
+      console.log("orders: ", orders);
+      const totalOrders = orders.length;
+      // console.log("totalOrders: ", totalOrders);
+      responseReturn(res, 200, { orders, totalOrders });
+    } else {
+      const orders = await authOrderModel
+        .find({ sellerId })
+        .skip(skipPage)
+        .limit(parPage)
+        .sort({ createdAt: -1 });
+      // console.log("orders: ", orders);
+
+      const totalOrders = orders.length;
+
+      // console.log("totalOrders: ", totalOrders);
+
+      responseReturn(res, 200, { orders, totalOrders });
+    }
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
 module.exports = {
   place_order,
   paymentCheck,
   get_data,
   get_orders,
   get_order,
+  get_admin_orders,
+  get_admin_order,
+  admin_order_update_status,
+  get_seller_orders,
 };
