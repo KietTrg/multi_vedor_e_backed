@@ -298,6 +298,30 @@ const get_seller_orders = async (req, res) => {
     console.log("error: ", error);
   }
 };
+const get_seller_order = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await authOrderModel.findById(orderId);
+    // console.log("order: ", order);
+    responseReturn(res, 200, { order });
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
+const seller_order_update_status = async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  try {
+    await authOrderModel.findByIdAndUpdate(orderId, {
+      deliveryStatus: status,
+    });
+    responseReturn(res, 200, { message: "update status success" });
+  } catch (error) {
+    console.log("error: ", error.message);
+    responseReturn(res, 500, { message: "interval server error" });
+  }
+};
 module.exports = {
   place_order,
   paymentCheck,
@@ -308,4 +332,6 @@ module.exports = {
   get_admin_order,
   admin_order_update_status,
   get_seller_orders,
+  get_seller_order,
+  seller_order_update_status,
 };
