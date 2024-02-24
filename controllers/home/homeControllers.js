@@ -36,21 +36,21 @@ const get_categorys = async (req, res) => {
 const get_products = async (req, res) => {
   try {
     const products = await productModel
-      .find({})
+      .find({ status: "active" })
       .limit(16)
       .sort({ createdAt: -1 });
     const allProducyLates = await productModel
-      .find({})
+      .find({ status: "active" })
       .limit(9)
       .sort({ createdAt: -1 });
     const latesProducts = formateProduct(allProducyLates);
     const allProducyTop = await productModel
-      .find({})
+      .find({ status: "active" })
       .limit(9)
       .sort({ rating: -1 });
     const topProducts = formateProduct(allProducyTop);
     const allProducySale = await productModel
-      .find({})
+      .find({ status: "active" })
       .limit(9)
       .sort({ discount: -1 });
     const saleProducts = formateProduct(allProducySale);
@@ -113,11 +113,13 @@ const price_range_product = async (req, res) => {
       high: 0,
     };
     const products = await productModel
-      .find({})
+      .find({ status: "active" })
       .limit(9)
       .sort({ createdAt: -1 });
     const latesProducts = formateProduct(products);
-    const getForPrice = await productModel.find({}).sort({ price: 1 });
+    const getForPrice = await productModel
+      .find({ status: "active" })
+      .sort({ price: 1 });
     if (getForPrice.length > 0) {
       priceRange.high = getForPrice[getForPrice.length - 1].price;
       priceRange.low = getForPrice[0].price;
@@ -132,7 +134,9 @@ const query_products = async (req, res) => {
   req.query.parPage = parPage;
   console.log(" req.query: ", req.query);
   try {
-    const products = await productModel.find({}).sort({ createdAt: -1 });
+    const products = await productModel
+      .find({ status: "active" })
+      .sort({ createdAt: -1 });
     // console.log("products: ", products);
 
     const totalProduct = new queryProducts(products, req.query)

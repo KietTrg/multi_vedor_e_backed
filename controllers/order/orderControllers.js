@@ -2,13 +2,17 @@ const { responseReturn } = require("../../utiles/response");
 const authOrderModel = require("../../models/authOrderModel");
 const customerOrderModel = require("../../models/customerOrderModel");
 const cardModel = require("../../models/cardModel");
+const myShopWallet = require("../../models/myShopWallet");
+const sellerWallet = require("../../models/sellerWallet");
 
 const {
   mongo: { ObjectId },
 } = require("mongoose");
 
 const monent = require("moment");
-
+const stripe = require("stripe")(
+  "sk_test_51OlRpIHOujiWwT21J8lzcfW6kFa3GEei9V1TiZBvJ4Zc21AdhkIUzEIlf0Zv2x6CRmNm4YEGgkIenED4k7CrG4Nr00SDTEnGQL"
+);
 const paymentCheck = async (id) => {
   try {
     const order = await customerOrderModel.findById(id);
@@ -30,8 +34,9 @@ const paymentCheck = async (id) => {
 };
 
 const place_order = async (req, res) => {
-  console.log("req: ", req.body);
+  // console.log("req: ", req.body);
   const { price, product, shipping_fee, shippingInfo, userId } = req.body;
+  console.log("price: ", price);
   let authorOrderData = [];
   let cardId = [];
   const tempDate = monent(Date.now()).format("DD/MM/YYYY, h:mm:ss a");
@@ -58,7 +63,7 @@ const place_order = async (req, res) => {
       customerId: userId,
       shippingInfo,
       products: customerOrderProduct,
-      price: price + shipping_fee,
+      price: price,
       deliveryStatus: "pending",
       paymentStatus: "unpaid",
       date: tempDate,
@@ -144,14 +149,18 @@ const get_orders = async (req, res) => {
   try {
     let orders = [];
     if (status !== "all") {
-      orders = await customerOrderModel.find({
-        customerId: new ObjectId(customerId),
-        deliveryStatus: status,
-      });
+      orders = await customerOrderModel
+        .find({
+          customerId: new ObjectId(customerId),
+          deliveryStatus: status,
+        })
+        .sort({ createdAt: -1 });
     } else {
-      orders = await customerOrderModel.find({
-        customerId: new ObjectId(customerId),
-      });
+      orders = await customerOrderModel
+        .find({
+          customerId: new ObjectId(customerId),
+        })
+        .sort({ createdAt: -1 });
     }
     responseReturn(res, 200, { orders });
   } catch (error) {
@@ -192,8 +201,8 @@ const get_admin_orders = async (req, res) => {
           },
         ])
         .skip(skipPage)
-        .limit(parPage)
-        .sort({ createAt: -1 });
+        .sort({ createdAt: -1 })
+        .limit(parPage);
       const totalOrders = await customerOrderModel.aggregate([
         {
           $lookup: {
@@ -322,6 +331,69 @@ const seller_order_update_status = async (req, res) => {
     responseReturn(res, 500, { message: "interval server error" });
   }
 };
+const create_payment = async (req, res) => {
+  const { price } = req.body;
+  console.log("price: ", price);
+  try {
+    const payment = await stripe.paymentIntents.create({
+      amount: Math.round(price / 23000) * 100,
+      currency: "usd",
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+    responseReturn(res, 200, { clientSecret: payment.client_secret });
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
+const order_confirm = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    await customerOrderModel.findByIdAndUpdate(orderId, {
+      paymentStatus: "paid",
+      deliveryStatus: "pending",
+    });
+    await authOrderModel.updateMany(
+      {
+        orderId: new ObjectId(orderId),
+      },
+      {
+        paymentStatus: "paid",
+        deliveryStatus: "pending",
+      }
+    );
+    const customerOrder = await customerOrderModel.findById(orderId);
+    const authOrder = await authOrderModel.find({
+      orderId: new ObjectId(orderId),
+    });
+    const time = monent(Date.now()).format("DD/MM/YYYY");
+
+    // console.log("time: ", time);
+
+    const splitTime = time.split("/");
+
+    // console.log("splitTime: ", splitTime);
+    // console.log("splitTime: ", splitTime[1]);
+    await myShopWallet.create({
+      amount: customerOrder.price,
+      month: splitTime[1],
+
+      year: splitTime[2],
+    });
+    for (let i = 0; i < authOrder.length; i++) {
+      await sellerWallet.create({
+        sellerId: authOrder[i].sellerId.toString(),
+        amount: authOrder[i].price,
+        month: splitTime[1],
+        year: splitTime[2],
+      });
+    }
+    responseReturn(res, 200, { message: "success" });
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
 module.exports = {
   place_order,
   paymentCheck,
@@ -334,4 +406,6 @@ module.exports = {
   get_seller_orders,
   get_seller_order,
   seller_order_update_status,
+  create_payment,
+  order_confirm,
 };

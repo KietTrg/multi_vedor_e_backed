@@ -42,6 +42,11 @@ const productSchema = new Schema(
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      default: "active",
+      required: true,
+    },
     images: {
       type: Array,
       required: true,

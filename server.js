@@ -134,6 +134,8 @@ app.use("/api", require("./routes/chatRoutes"));
 
 app.use("/api/home", require("./routes/home/homeRoutes"));
 app.use("/api", require("./routes/order/orderRoutes"));
+app.use("/api", require("./routes/order/couponRoutes"));
+app.use("/api", require("./routes/dashboard/dashboardRoutes"));
 app.use("/api", require("./routes/paymentRoutes"));
 app.use("/api", require("./routes/home/cardRoutes"));
 app.use("/api", require("./routes/authRoutes"));

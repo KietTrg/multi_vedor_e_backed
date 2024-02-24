@@ -63,7 +63,44 @@ const customer_login = async (req, res) => {
     responseReturn(res, 500, { error: error.message });
   }
 };
+const customer_logout = async (req, res) => {
+  res.cookie("customerToken", "", {
+    expires: new Date(Date.now()),
+  });
+  responseReturn(res, 200, { message: "Logout success" });
+};
+const change_Password = async (req, res) => {
+  const { oldPass, newPass, customerId } = req.body;
+  try {
+    const customer = await customerModel
+      .findById(customerId)
+      .select("+password");
+    if (customer) {
+      const match = await bcrpty.compare(oldPass, customer.password);
+      if (match) {
+        const passwordUpdate = await customerModel.findByIdAndUpdate(
+          customerId,
+          {
+            password: await bcrpty.hash(newPass, 10),
+          }
+        );
+        responseReturn(res, 201, {
+          passwordUpdate,
+          message: "Update your password success",
+        });
+      } else {
+        responseReturn(res, 404, { message: "Password wrong" });
+      }
+    } else {
+      responseReturn(res, 404, { message: "Customer not found" });
+    }
+  } catch (error) {
+    responseReturn(res, 500, { error: error.message });
+  }
+};
 module.exports = {
   customer_register,
   customer_login,
+  customer_logout,
+  change_Password,
 };
