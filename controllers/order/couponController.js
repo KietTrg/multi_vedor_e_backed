@@ -3,10 +3,10 @@ const { responseReturn } = require("../../utiles/response");
 
 const add_coupon = async (req, res) => {
   const { couponName, couponTime, couponPercent } = req.body;
-  console.log("req.body: ", req.body);
+
   try {
     const coupon = await couponModel.create({
-      name: couponName,
+      name: couponName.toUpperCase().replace(/\s/g, ""),
       expire: couponTime,
       percent: couponPercent,
     });

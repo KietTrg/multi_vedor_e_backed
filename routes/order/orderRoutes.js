@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const orderControllers = require("../../controllers/order/orderControllers");
+
 router.post("/home/order/place-order", orderControllers.place_order);
 router.get("/home/customer/get-data/:userId", orderControllers.get_data);
 router.get(
@@ -10,6 +11,7 @@ router.get("/home/customer/get-order/:orderId", orderControllers.get_order);
 router.post("/order/create-payment", orderControllers.create_payment);
 router.get("/order/confirm/:orderId", orderControllers.order_confirm);
 //admin
+router.post("/admin/add-shipping", orderControllers.create_shipping_fee);
 router.get("/admin/orders", orderControllers.get_admin_orders);
 router.get("/admin/order/:orderId", orderControllers.get_admin_order);
 router.put(

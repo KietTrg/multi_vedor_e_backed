@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const cardControllers = require("../../controllers/home/cardControllers");
+
 router.post("/home/product/add_to_card", cardControllers.add_to_card);
+// router.get("/home/product/get-fee", cardControllers.get_shipping_fee);
 router.get("/home/product/get-card/:userId", cardControllers.get_card);
 router.delete("/home/product/delete-card/:cardId", cardControllers.delete_card);
 router.put("/home/product/quantity-inc/:cardId", cardControllers.quantity_inc);

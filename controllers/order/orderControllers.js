@@ -4,15 +4,34 @@ const customerOrderModel = require("../../models/customerOrderModel");
 const cardModel = require("../../models/cardModel");
 const myShopWallet = require("../../models/myShopWallet");
 const sellerWallet = require("../../models/sellerWallet");
+const productModel = require("../../models/productModel");
 
 const {
   mongo: { ObjectId },
 } = require("mongoose");
 
 const monent = require("moment");
+const shippingFeeModel = require("../../models/shippingFeeModel");
 const stripe = require("stripe")(
   "sk_test_51OlRpIHOujiWwT21J8lzcfW6kFa3GEei9V1TiZBvJ4Zc21AdhkIUzEIlf0Zv2x6CRmNm4YEGgkIenED4k7CrG4Nr00SDTEnGQL"
 );
+
+const create_shipping_fee = async (req, res) => {
+  const { shippingFee } = req.body;
+  try {
+    const shipping_fee = await shippingFeeModel.create({
+      shipping_fee: shippingFee,
+    });
+    responseReturn(res, 200, {
+      shipping_fee,
+      message: "Add shipping fee success",
+    });
+  } catch (error) {
+    console.log("error: ", error.message);
+    responseReturn(res, 500, { message: "Add shipping fee fail" });
+  }
+};
+
 const paymentCheck = async (id) => {
   try {
     const order = await customerOrderModel.findById(id);
@@ -36,6 +55,18 @@ const paymentCheck = async (id) => {
 const place_order = async (req, res) => {
   // console.log("req: ", req.body);
   const { price, product, shipping_fee, shippingInfo, userId } = req.body;
+  let productQuantity = [];
+
+  product.forEach((el) => {
+    el.products.forEach((e) => {
+      return productQuantity.push({
+        quantity: e.quantity,
+        productId: e.productInfo._id,
+      });
+    });
+  });
+  console.log("productQuantity: ", productQuantity);
+
   console.log("price: ", price);
   let authorOrderData = [];
   let cardId = [];
@@ -68,6 +99,21 @@ const place_order = async (req, res) => {
       paymentStatus: "unpaid",
       date: tempDate,
     });
+    for (let j = 0; j < productQuantity.length; j++) {
+      const productCurrent = await productModel.findById(
+        productQuantity[j].productId
+      );
+      // console.log("productCurrent: ", productCurrent);
+      const updateQuantity = await productModel.findByIdAndUpdate(
+        productQuantity[j].productId,
+        {
+          stock:
+            +productQuantity[j].quantity < productCurrent.stock &&
+            productCurrent.stock - +productQuantity[j].quantity,
+        }
+      );
+      console.log("updateQuantity: ", updateQuantity);
+    }
     for (let i = 0; i < product.length; i++) {
       const pro = product[i].products;
       const pri = product[i].price;
@@ -189,6 +235,7 @@ const get_admin_orders = async (req, res) => {
   try {
     if (searchValue) {
     } else {
+      const fee = await shippingFeeModel.findOne({}).sort({ createdAt: -1 });
       const orders = await customerOrderModel
         .aggregate([
           {
@@ -201,8 +248,8 @@ const get_admin_orders = async (req, res) => {
           },
         ])
         .skip(skipPage)
-        .sort({ createdAt: -1 })
-        .limit(parPage);
+        .limit(parPage)
+        .sort({ createdAt: -1 });
       const totalOrders = await customerOrderModel.aggregate([
         {
           $lookup: {
@@ -216,7 +263,11 @@ const get_admin_orders = async (req, res) => {
 
       console.log("totalOrders: ", totalOrders.length);
 
-      responseReturn(res, 200, { orders, totalOrders: totalOrders.length });
+      responseReturn(res, 200, {
+        fee: fee.shipping_fee,
+        orders,
+        totalOrders: totalOrders.length,
+      });
     }
   } catch (error) {
     console.log("error: ", error);
@@ -408,4 +459,5 @@ module.exports = {
   seller_order_update_status,
   create_payment,
   order_confirm,
+  create_shipping_fee,
 };

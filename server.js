@@ -84,9 +84,9 @@ io.on("connection", (s) => {
     io.emit("activeAdmin", { status: true });
   });
   s.on("add_admin", (adminInfo) => {
-    delete adminInfo.email;
+    delete adminInfo?.email;
     admin = adminInfo;
-    admin.socketId = s.id;
+    admin.socketId = s?.id;
     io.emit("activeSeller", allSeller);
     io.emit("activeAdmin", { status: true });
   });

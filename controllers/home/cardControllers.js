@@ -1,9 +1,18 @@
 const cardModel = require("../../models/cardModel");
 const wishlistModel = require("../../models/wishlistModel");
+const shippingFeeModel = require("../../models/shippingFeeModel");
 const { responseReturn } = require("../../utiles/response");
 const {
   mongo: { ObjectId },
 } = require("mongoose");
+
+// const get_shipping_fee = async (req, res) => {
+//   try {
+//     const fee = await shippingFeeModel.findOne({}).sort({ createdAt: -1 });
+//     console.log("fee: ", fee);
+//   } catch (error) {}
+// };
+
 const add_to_card = async (req, res) => {
   const { userId, quantity, productId } = req.body;
   try {
@@ -35,11 +44,14 @@ const add_to_card = async (req, res) => {
     console.log("error: ", error);
   }
 };
+
 const get_card = async (req, res) => {
   const co = 5;
   const { userId } = req.params;
 
   try {
+    const fee = await shippingFeeModel.findOne({}).sort({ createdAt: -1 });
+    console.log("fee: ", fee);
     const card_products = await cardModel.aggregate([
       {
         $match: {
@@ -145,7 +157,7 @@ const get_card = async (req, res) => {
       card_products: p,
       price: calculatePrice,
       count,
-      shipping_fee: 50000 * p.length,
+      shipping_fee: fee.shipping_fee * p.length, //50.000
       outOfStockProduct,
       buyProductItem,
     });
@@ -198,8 +210,20 @@ const add_to_wishlist = async (req, res) => {
   // console.log("req.body: ", req.body);
   try {
     const product = await wishlistModel.findOne({
-      productId,
+      $and: [
+        {
+          productId: {
+            $eq: productId,
+          },
+        },
+        {
+          userId: {
+            $eq: userId,
+          },
+        },
+      ],
     });
+    // console.log("productWishlist: ", product);
     if (product) {
       responseReturn(res, 404, { error: "Product already added to card" });
     } else {
@@ -241,6 +265,7 @@ const delete_wishlist = async (req, res) => {
     console.log("error: ", error.message);
   }
 };
+
 module.exports = {
   add_to_card,
   get_card,
@@ -250,4 +275,6 @@ module.exports = {
   add_to_wishlist,
   get_wishlist,
   delete_wishlist,
+
+  // get_shipping_fee,
 };

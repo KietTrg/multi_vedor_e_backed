@@ -7,13 +7,15 @@ const moment = require("moment");
 const {
   mongo: { ObjectId },
 } = require("mongoose");
+const couponModel = require("../../models/couponModel");
+const couponCustomerModel = require("../../models/couponCustomerModel");
 const formateProduct = (products) => {
   const productArray = [];
   let i = 0;
   while (i < products.length) {
     let temp = [];
     let j = i;
-    while (j < i + 3) {
+    while (j < i + 5) {
       if (products[j]) {
         temp.push(products[j]);
       }
@@ -272,6 +274,50 @@ const get_review = async (req, res) => {
     console.log("error: ", error);
   }
 };
+const getAll_coupon = async (req, res) => {
+  try {
+    const coupons = await couponModel.find();
+    // console.log("coupons: ", coupons);
+    const totalCoupon = await couponModel.find().countDocuments();
+    // console.log("totalCoupon: ", totalCoupon);
+    responseReturn(res, 200, { coupons, totalCoupon });
+  } catch (error) {
+    console.log("error: ", error.message);
+  }
+};
+const add_to_voucher = async (req, res) => {
+  const { userId, couponId, name, expire, percent } = req.body;
+  try {
+    const coupon = await couponCustomerModel.findOne({
+      $and: [
+        {
+          couponId: {
+            $eq: couponId,
+          },
+        },
+        {
+          userId: {
+            $eq: userId,
+          },
+        },
+      ],
+    });
+    if (coupon) {
+      responseReturn(res, 404, { error: "voucher already" });
+    } else {
+      const coupon = await couponCustomerModel.create({
+        userId,
+        couponId,
+        name,
+        expire,
+        percent,
+      });
+      responseReturn(res, 200, { message: "Add to voucher success", coupon });
+    }
+  } catch (error) {
+    console.log("error: ", error);
+  }
+};
 module.exports = {
   get_categorys,
   get_products,
@@ -281,4 +327,6 @@ module.exports = {
   query_products,
   customer_review,
   get_review,
+  getAll_coupon,
+  add_to_voucher,
 };

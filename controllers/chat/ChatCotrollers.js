@@ -72,7 +72,7 @@ const add_customer_friend = async (req, res) => {
               myFriends: {
                 friendId: userId,
                 name: user.name,
-                image: " ",
+                image: "",
               },
             },
           }

@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const homeControllers = require("../../controllers/home/homeControllers");
 router.get("/get-categorys", homeControllers.get_categorys);
+router.get("/getAll-coupon", homeControllers.getAll_coupon);
+router.post("/add-to-voucher", homeControllers.add_to_voucher);
 router.get("/get-products", homeControllers.get_products);
 router.get("/get-product/:pid", homeControllers.get_product);
 router.get("/price-range-latest-product", homeControllers.price_range_product);
