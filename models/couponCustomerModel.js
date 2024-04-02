@@ -17,6 +17,12 @@ const couponCustomerSchema = new Schema(
     expire: {
       type: Date,
       required: true,
+      index: { expires: 0 },
+    },
+    status: {
+      type: String,
+      require: true,
+      default: "active",
     },
     percent: {
       type: Number,
@@ -27,5 +33,5 @@ const couponCustomerSchema = new Schema(
     timestamps: true,
   }
 );
-
+couponCustomerSchema.index({ expire: 1 }, { expireAfterSeconds: null });
 module.exports = model("couponCustomers", couponCustomerSchema);

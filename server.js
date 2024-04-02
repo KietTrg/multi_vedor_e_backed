@@ -85,10 +85,12 @@ io.on("connection", (s) => {
   });
   s.on("add_admin", (adminInfo) => {
     delete adminInfo?.email;
-    admin = adminInfo;
-    admin.socketId = s?.id;
-    io.emit("activeSeller", allSeller);
-    io.emit("activeAdmin", { status: true });
+    if (adminInfo) {
+      admin = adminInfo;
+      admin.socketId = s?.id;
+      io.emit("activeSeller", allSeller);
+      io.emit("activeAdmin", { status: true });
+    }
   });
   s.on("send_seller_message", (message) => {
     // console.log("message: ", message);

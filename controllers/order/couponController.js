@@ -1,3 +1,4 @@
+const couponCustomerModel = require("../../models/couponCustomerModel");
 const couponModel = require("../../models/couponModel");
 const { responseReturn } = require("../../utiles/response");
 
@@ -21,6 +22,7 @@ const get_coupons = async (req, res) => {
     const coupons = await couponModel.find();
     // console.log("coupons: ", coupons);
     const totalCoupon = await couponModel.find().countDocuments();
+
     // console.log("totalCoupon: ", totalCoupon);
     responseReturn(res, 200, { coupons, totalCoupon });
   } catch (error) {
@@ -43,20 +45,30 @@ const delete_coupon = async (req, res) => {
   }
 };
 const apply_coupon = async (req, res) => {
-  const { info } = req.body;
+  const { info, userId } = req.body;
+  console.log("userId: ", userId);
   try {
-    const checkCoupon = await couponModel.findOne({ name: info });
-    const checkExpire = new Date(checkCoupon.expire).getTime() > Date.now();
-    if (checkExpire) {
-      const percentCoupon = checkCoupon.percent;
-      responseReturn(res, 200, {
-        percentCoupon,
-        message: "Apply Voucher success",
-      });
-    } else {
+    const checkCoupon = await couponCustomerModel.findOne({
+      name: info,
+      userId: userId,
+    });
+    if (checkCoupon === null) {
       responseReturn(res, 404, {
         message: "Voucher not found or expired",
       });
+    } else {
+      const checkExpire = new Date(checkCoupon.expire).getTime() > Date.now();
+      if (checkExpire) {
+        const percentCoupon = checkCoupon.percent;
+        responseReturn(res, 200, {
+          percentCoupon,
+          message: "Apply Voucher success",
+        });
+      } else {
+        responseReturn(res, 404, {
+          message: "Voucher not found or expired",
+        });
+      }
     }
   } catch (error) {
     console.log("error: ", error.message);

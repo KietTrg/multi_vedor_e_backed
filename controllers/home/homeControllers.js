@@ -318,6 +318,41 @@ const add_to_voucher = async (req, res) => {
     console.log("error: ", error);
   }
 };
+// const update_expire_voucher = async (req, res) => {
+//   const { userId } = req.body;
+//   console.log("userId: ", userId);
+//   const getAllVoucherByCustomer = await couponCustomerModel.find({ userId });
+//   if (getAllVoucherByCustomer) {
+//     const checkExpireVoucherByCustomer =
+//       new Date(getAllVoucherByCustomer.expire).getTime() < Date.now();
+//     console.log("checkExpireVoucherByCustomer: ", checkExpireVoucherByCustomer);
+//   }
+// };
+const get_voucher_customer = async (req, res) => {
+  // console.log("req: ", req.params);
+  const { userId } = req.params;
+  const getAllVoucherByCustomer = await couponCustomerModel.find({
+    userId,
+    status: "active",
+  });
+  const getAllVoucherByCustomerCount = await couponCustomerModel
+    .find({
+      userId,
+      status: "active",
+    })
+    .countDocuments();
+  console.log(
+    "getAllVoucherByCustomer.length: ",
+    getAllVoucherByCustomer.length
+  );
+
+  // console.log("getAllVoucherByCustomer: ", getAllVoucherByCustomer);
+  // console.log("getAllVoucherByCustomerCount: ", getAllVoucherByCustomerCount);
+  responseReturn(res, 200, {
+    getAllVoucherByCustomer,
+    getAllVoucherByCustomerCount,
+  });
+};
 module.exports = {
   get_categorys,
   get_products,
@@ -329,4 +364,6 @@ module.exports = {
   get_review,
   getAll_coupon,
   add_to_voucher,
+  get_voucher_customer,
+  // update_expire_voucher,
 };
