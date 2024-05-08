@@ -82,7 +82,6 @@ const get_seller_payment_details = async (req, res) => {
   const { sellerId } = req.params;
   try {
     const payments = await sellerWallet.find({ sellerId });
-    console.log("payments: ", payments);
     const pending_withdrawals = await withdrawalRequest.find({
       $and: [
         {
@@ -113,7 +112,6 @@ const get_seller_payment_details = async (req, res) => {
         },
       ],
     });
-    console.log("success_withdrawals: ", success_withdrawals);
     const pending_amount = sumAmount(pending_withdrawals);
     const withdrawal_amount = sumAmount(success_withdrawals);
     const total_sale = sumAmount(payments);
@@ -137,7 +135,6 @@ const get_seller_payment_details = async (req, res) => {
   }
 };
 const send_withdrawal_request = async (req, res) => {
-  console.log("req: ", req.body);
   const { sellerId, amount } = req.body;
   try {
     const withdrawal = await withdrawalRequest.create({
@@ -166,11 +163,9 @@ const confirm_payment_request = async (req, res) => {
   const { id } = req.body;
   try {
     const payment = await withdrawalRequest.findById(id);
-    console.log("payment: ", payment);
     const { stripeId } = await stripeModel.findOne({
       sellerId: new ObjectId(payment.sellerId),
     });
-    console.log("stripeId: ", stripeId);
     // const test = Math.round(payment.amount / 23000) * 100;
     // console.log("test: ", test);
 

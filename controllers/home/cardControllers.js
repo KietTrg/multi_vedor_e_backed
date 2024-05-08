@@ -51,7 +51,7 @@ const get_card = async (req, res) => {
 
   try {
     const fee = await shippingFeeModel.findOne({}).sort({ createdAt: -1 });
-    console.log("fee: ", fee);
+    // console.log("fee: ", fee);
     const card_products = await cardModel.aggregate([
       {
         $match: {
@@ -69,7 +69,7 @@ const get_card = async (req, res) => {
         },
       },
     ]);
-    // console.log("card_products: ", card_products);
+    console.log("card_products: ", card_products);
     let buyProductItem = 0;
     let calculatePrice = 0;
     let count = 0;
@@ -206,7 +206,8 @@ const quantity_dec = async (req, res) => {
 };
 
 const add_to_wishlist = async (req, res) => {
-  const { userId, name, productId, price, image, discount, slug } = req.body;
+  const { userId, name, productId, price, image, discount, slug, rating } =
+    req.body;
   // console.log("req.body: ", req.body);
   try {
     const product = await wishlistModel.findOne({
@@ -225,7 +226,7 @@ const add_to_wishlist = async (req, res) => {
     });
     // console.log("productWishlist: ", product);
     if (product) {
-      responseReturn(res, 404, { error: "Product already added to card" });
+      responseReturn(res, 404, { error: "Product already added to wishlist" });
     } else {
       const product = await wishlistModel.create({
         userId,
@@ -235,6 +236,7 @@ const add_to_wishlist = async (req, res) => {
         image,
         discount,
         slug,
+        rating,
       });
       responseReturn(res, 200, { message: "Add to wishlist success", product });
     }

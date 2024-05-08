@@ -71,6 +71,7 @@ const get_product = async (req, res) => {
   const { pid } = req.params;
   try {
     const product = await productModel.findById(pid);
+    console.log("product: ", product);
     const relatedProducts = await productModel
       .find({
         $and: [
